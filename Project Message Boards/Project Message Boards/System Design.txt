@@ -1,0 +1,38 @@
+﻿References/Similiar applications:
+https://martinfowler.com/bliki/CQRS.html
+https://softwareengineering.stackexchange.com/questions/420676/comparison-of-cqrs-and-mvc
+https://udidahan.com/2009/12/09/clarified-cqrs/
+https://www.c-sharpcorner.com/article/console-based-chat/
+https://techworkplace.wordpress.com/simple-console-chat-application-through-azure-service-bus/
+
+
+1.Planning
+
+I Looked at other similiar Applications to get an idea of how this is done and how to get going. The next step was to look into applying CQRS to 
+my application as its not something im super familiar with.
+
+2. Design
+I decided to go for an agile approach and fail fast. I wrote a basic application in a style im familar with using repositories to get started. 
+Next I would refactor it into a CQRS approach.
+
+3. Coding
+I used pre-existing code and AI to generate my first iteration of code, here i fixed several issues (project name tracking for wall display) and 
+got it to the stage where it handled the scenarios. Next I looked into CQRS and found this insightful text:
+
+"CQRS is concerned with isolating all reads (Query) to only read and never write, and all writes/creates/updates (command) to only write. 
+The model used to write should also be different than the model returned from a read, which in most normalized relational databases
+is almost self fulfilling. Furthermore the database or whatever is used for persistence doesn't need to be the same one for commands and queries.
+If the same web app is doing both reads and writes through the respective services, that is outside the scope of CQRS."
+
+I realised i needed to ditch my repository approach for sure and seperate out the commands and queries to perform the data access, I updated the 
+approach to use a Command Handler and Query handler and setup classes to handle the respective commands. (Might seem over kill here but in a real 
+application i'm sure the number of commands could grow large so its good practice.)
+
+I rewrote the handle handling section from a bunch of if/else statements into a switch statement as I dislike using if/else statements that exceed
+more that 2 or 3 condition blocks as i think its messy. I also moved the string processing into wrapper methods for the real functionality 
+like the PostMessage method so the switch statement is cleaner.
+
+4.Testing
+Nothing crazy here, I tested using the listed scenarios ensuring they still worked with every major change. Initial project using repository approach,
+After the switch the CQRS approach, After Implementing the interfaces and finally after i added the test project.
+
