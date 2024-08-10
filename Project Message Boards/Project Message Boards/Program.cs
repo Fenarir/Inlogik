@@ -1,155 +1,119 @@
-﻿namespace ProjectMessageBoard
+﻿using ProjectMessageBoard.Commands;
+using ProjectMessageBoard.Models;
+using ProjectMessageBoard.Queries;
+
+namespace ProjectMessageBoard
 {
     class Program
     {
-        // Data structures to store the messages, followers, and users.
-        static Dictionary<string, List<Message>> projectMessages = new Dictionary<string, List<Message>>();
-        static Dictionary<string, List<string>> userFollows = new Dictionary<string, List<string>>();
+        // Data structures for storing messages and user follows
+        static readonly Dictionary<string, List<Message>> projectMessages = new Dictionary<string, List<Message>>();
+        static readonly Dictionary<string, List<string>> userFollows = new Dictionary<string, List<string>>();
 
         static void Main(string[] args)
         {
+            var commandHandler = new CommandHandler(projectMessages, userFollows);
+            var queryHandler = new QueryHandler(projectMessages, userFollows);
+
             while (true)
             {
                 Console.Write("> ");
                 string input = Console.ReadLine();
+                string commandType = DetermineCommandType(input);
 
-                // Handle posting, reading, following, and wall commands
-                HandleCommand(input);
+                switch (commandType)
+                {
+                    case "PostMessage":
+                        ProcessPostMessage(input, commandHandler);
+                        break;
+
+                    case "ReadProjectMessages":
+                        ProcessReadProjectMessages(input, queryHandler);
+                        break;
+
+                    case "FollowProject":
+                        ProcessFollowProject(input, commandHandler);
+                        break;
+
+                    case "DisplayWall":
+                        ProcessDisplayWall(input, queryHandler);
+                        break;
+
+                    default:
+                        Console.WriteLine("Unknown command.");
+                        break;
+                }
             }
         }
 
-        static void HandleCommand(string input)
+        static string DetermineCommandType(string input)
         {
-            // Posting command: <user name> -> @<project name> <message>
             if (input.Contains("-> @"))
-            {
-                string[] splitInput = input.Split(new[] { "-> @" }, 2, StringSplitOptions.None);
-                string userName = splitInput[0].Trim();
-                string[] projectAndMessage = splitInput[1].Split(new[] { ' ' }, 2);
-                string projectName = projectAndMessage[0].Trim();
-                string messageText = projectAndMessage[1].Trim();
+                return "PostMessage";
 
-                PostMessage(userName, projectName, messageText);
-            }
-            // Reading command: <project name>
-            else if (!input.Contains(" "))
-            {
-                string projectName = input.Trim();
-                ReadProjectMessages(projectName);
-            }
-            // Following command: <user name> follows <project name>
-            else if (input.Contains("follows"))
-            {
-                string[] splitInput = input.Split("follows");
-                string userName = splitInput[0].Trim();
-                string projectName = splitInput[1].Trim();
+            if (!input.Contains(" "))
+                return "ReadProjectMessages";
 
-                FollowProject(userName, projectName);
-            }
-            // Wall command: <user name> wall
-            else if (input.EndsWith("wall"))
-            {
-                string userName = input.Replace("wall", "").Trim();
-                DisplayWall(userName);
-            }
+            if (input.Contains("follows"))
+                return "FollowProject";
+
+            if (input.EndsWith("wall"))
+                return "DisplayWall";
+
+            return "Unknown";
         }
 
-        static void PostMessage(string userName, string projectName, string messageText)
+        static void ProcessPostMessage(string input, CommandHandler commandHandler)
         {
-            if (!projectMessages.ContainsKey(projectName))
-            {
-                projectMessages[projectName] = new List<Message>();
-            }
+            string[] splitInput = input.Split(new[] { "-> @" }, 2, StringSplitOptions.None);
+            string userName = splitInput[0].Trim();
+            string[] projectAndMessage = splitInput[1].Split(new[] { ' ' }, 2);
+            string projectName = projectAndMessage[0].Trim();
+            string messageText = projectAndMessage[1].Trim();
 
-            projectMessages[projectName].Add(new Message
+            var command = new PostMessageCommand
             {
                 UserName = userName,
-                Text = messageText,
-                Timestamp = DateTime.Now
-            });
+                ProjectName = projectName,
+                MessageText = messageText
+            };
 
-            Console.WriteLine($"{userName} posted to {projectName}: {messageText}");
+            commandHandler.Handle(command);
         }
 
-        static void ReadProjectMessages(string projectName)
+        static void ProcessReadProjectMessages(string input, QueryHandler queryHandler)
         {
-            if (projectMessages.ContainsKey(projectName))
+            string projectName = input.Trim();
+            var query = new ReadProjectMessagesQuery
             {
-                foreach (Message message in projectMessages[projectName])
-                {
-                    Console.WriteLine($"{message.UserName}: {message.Text} ({GetTimeAgo(message.Timestamp)})");
-                }
-            }
-            else
-            {
-                Console.WriteLine($"No messages for project {projectName}");
-            }
+                ProjectName = projectName
+            };
+            queryHandler.Handle(query);
         }
 
-        static void FollowProject(string userName, string projectName)
+        static void ProcessFollowProject(string input, CommandHandler commandHandler)
         {
-            if (!userFollows.ContainsKey(userName))
-            {
-                userFollows[userName] = new List<string>();
-            }
+            string[] splitInput = input.Split("follows");
+            string userName = splitInput[0].Trim();
+            string projectName = splitInput[1].Trim();
 
-            if (!userFollows[userName].Contains(projectName))
+            var command = new FollowProjectCommand
             {
-                userFollows[userName].Add(projectName);
-                Console.WriteLine($"{userName} now follows {projectName}");
-            }
+                UserName = userName,
+                ProjectName = projectName
+            };
+
+            commandHandler.Handle(command);
         }
 
-        static void DisplayWall(string userName)
+        static void ProcessDisplayWall(string input, QueryHandler queryHandler)
         {
-            if (!userFollows.ContainsKey(userName))
+            string userName = input.Replace("wall", "").Trim();
+            var query = new DisplayWallQuery
             {
-                Console.WriteLine($"{userName} is not following any projects.");
-                return;
-            }
-
-            List<string> followedProjects = userFollows[userName];
-            List<Message> allMessages = new List<Message>();
-
-            foreach (string project in followedProjects)
-            {
-                if (projectMessages.ContainsKey(project))
-                {
-                    foreach (Message message in projectMessages[project])
-                    {
-                        message.ProjectName = project;
-                        allMessages.Add(message);
-                    }
-                }
-            }
-
-            IEnumerable<Message> orderedMessages = allMessages.OrderByDescending(m => m.Timestamp);
-
-            foreach (Message message in orderedMessages)
-            {
-                Console.WriteLine($"{message.ProjectName} - {message.UserName}: {message.Text} ({GetTimeAgo(message.Timestamp)})");
-            }
+                UserName = userName
+            };
+            queryHandler.Handle(query);
         }
-
-        static string GetTimeAgo(DateTime timestamp)
-        {
-            TimeSpan timeSpan = DateTime.Now - timestamp;
-
-            if (timeSpan.TotalMinutes < 1)
-                return "just now";
-            if (timeSpan.TotalMinutes < 60)
-                return $"{(int)timeSpan.TotalMinutes} minutes ago";
-            if (timeSpan.TotalHours < 24)
-                return $"{(int)timeSpan.TotalHours} hours ago";
-            return $"{(int)timeSpan.TotalDays} days ago";
-        }
-    }
-
-    class Message
-    {
-        public string UserName { get; set; }
-        public string ProjectName { get; set; }
-        public string Text { get; set; }
-        public DateTime Timestamp { get; set; }
     }
 }
