@@ -2,7 +2,7 @@
 
 namespace ProjectMessageBoard.Commands
 {
-    public class CommandHandler
+    public class CommandHandler : ICommandHandler
     {
         private readonly Dictionary<string, List<Message>> _projectMessages;
         private readonly Dictionary<string, List<string>> _userFollows;

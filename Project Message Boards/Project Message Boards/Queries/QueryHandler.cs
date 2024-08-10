@@ -2,7 +2,7 @@
 
 namespace ProjectMessageBoard.Queries
 {
-    public class QueryHandler
+    public class QueryHandler : IQueryHandler
     {
         private readonly Dictionary<string, List<Message>> _projectMessages;
         private readonly Dictionary<string, List<string>> _userFollows;

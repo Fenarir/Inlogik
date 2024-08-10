@@ -12,8 +12,8 @@ namespace ProjectMessageBoard
 
         static void Main(string[] args)
         {
-            var commandHandler = new CommandHandler(projectMessages, userFollows);
-            var queryHandler = new QueryHandler(projectMessages, userFollows);
+            ICommandHandler commandHandler = new CommandHandler(projectMessages, userFollows);
+            IQueryHandler queryHandler = new QueryHandler(projectMessages, userFollows);
 
             while (true)
             {
@@ -63,7 +63,7 @@ namespace ProjectMessageBoard
             return "Unknown";
         }
 
-        static void ProcessPostMessage(string input, CommandHandler commandHandler)
+        static void ProcessPostMessage(string input, ICommandHandler commandHandler)
         {
             string[] splitInput = input.Split(new[] { "-> @" }, 2, StringSplitOptions.None);
             string userName = splitInput[0].Trim();
@@ -81,7 +81,7 @@ namespace ProjectMessageBoard
             commandHandler.Handle(command);
         }
 
-        static void ProcessReadProjectMessages(string input, QueryHandler queryHandler)
+        static void ProcessReadProjectMessages(string input, IQueryHandler queryHandler)
         {
             string projectName = input.Trim();
             var query = new ReadProjectMessagesQuery
@@ -91,7 +91,7 @@ namespace ProjectMessageBoard
             queryHandler.Handle(query);
         }
 
-        static void ProcessFollowProject(string input, CommandHandler commandHandler)
+        static void ProcessFollowProject(string input, ICommandHandler commandHandler)
         {
             string[] splitInput = input.Split("follows");
             string userName = splitInput[0].Trim();
@@ -106,7 +106,7 @@ namespace ProjectMessageBoard
             commandHandler.Handle(command);
         }
 
-        static void ProcessDisplayWall(string input, QueryHandler queryHandler)
+        static void ProcessDisplayWall(string input, IQueryHandler queryHandler)
         {
             string userName = input.Replace("wall", "").Trim();
             var query = new DisplayWallQuery
